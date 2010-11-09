@@ -30,19 +30,24 @@ module ThumbsUp
       #  :at_most     - Item may not have more than X votes
       def tally(*args)
         options = args.extract_options!
+        vote_count = "COUNT(#{Vote.table_name}.voteable_id)"
         t = self.where("#{Vote.table_name}.voteable_type = '#{self.name}'")
         # We join so that you can order by columns on the voteable model.
         t = t.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.#{self.primary_key} = #{Vote.table_name}.voteable_id")
-        t = t.having("vote_count > 0")
-        t = t.group("#{Vote.table_name}.voteable_id")
+        t = t.having("#{vote_count} > 0")
+        t = t.group("#{Vote.table_name}.voteable_id, #{column_names_for_tally}")
         t = t.limit(options[:limit]) if options[:limit]
         t = t.where("#{Vote.table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
         t = t.where("#{Vote.table_name}.created_at <= ?", options[:end_at]) if options[:end_at]
         t = t.where(options[:conditions]) if options[:conditions]
-        t = options[:order] ? t.order(options[:order]) : t.order("vote_count DESC")
-        t = t.having(["vote_count >= ?", options[:at_least]]) if options[:at_least]
-        t = t.having(["vote_count <= ?", options[:at_most]]) if options[:at_most]
+        t = options[:order] ? t.order(options[:order]) : t.order("#{vote_count} DESC")
+        t = t.having(["#{vote_count} >= ?", options[:at_least]]) if options[:at_least]
+        t = t.having(["#{vote_count} <= ?", options[:at_most]]) if options[:at_most]
         t.select("#{self.table_name}.*, COUNT(#{Vote.table_name}.voteable_id) AS vote_count")
+      end
+
+      def column_names_for_tally
+        column_names.map { |column| "#{table_name}.#{column}" }.join(", ")
       end
 
     end

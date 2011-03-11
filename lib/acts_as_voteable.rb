@@ -16,65 +16,38 @@ module ThumbsUp
 
     module SingletonMethods
 
-=begin
-
-SELECT users.*, joined_votes.Vote_Total FROM `users` LEFT OUTER JOIN 
-(SELECT DISTINCT votes.*, 
-     (IFNULL(vfor.Votes_For, 0)-IFNULL(against.Votes_Against, 0)) AS Vote_Total
-FROM (votes
-  LEFT JOIN
-    (SELECT voteable_id, COUNT(vote) as Votes_Against FROM votes WHERE vote = 0 GROUP BY voteable_id) AS against ON
-    votes.voteable_id = against.voteable_id)
-  LEFT JOIN 
-    (SELECT voteable_id, COUNT(vote) as Votes_For FROM votes WHERE vote = 1 GROUP BY voteable_id) as vfor
-    ON votes.voteable_id = vfor.voteable_id) AS joined_votes ON users.id = joined_votes.voteable_id
-
-  WHERE (joined_votes.voteable_type = 'User') AND (joined_votes.created_at >= '2011-03-09 23:28:18') 
-      AND (joined_votes.created_at <= '2011-03-10 23:28:18') GROUP BY joined_votes.voteable_id, 
-      users.id, users.username, users.email, users.encrypted_password, users.salt, users.admin, 
-      users.created_at, users.updated_at, users.image, users.blurb HAVING COUNT(joined_votes.voteable_id) 
-      > 0 ORDER BY joined_votes.Vote_Total DESC LIMIT 10
-      
-      Compare this to original:
-      
-      SELECT  users.*, COUNT(votes.voteable_id) AS vote_count FROM `users` LEFT OUTER JOIN votes 
-      ON users.id = votes.voteable_id WHERE (votes.voteable_type = 'User') AND (votes.created_at 
-      >= '2011-03-09 23:28:18') AND (votes.created_at <= '2011-03-10 23:28:18') GROUP BY 
-      votes.voteable_id, users.id, users.username, users.email, users.encrypted_password, 
-      users.salt, users.admin, users.created_at, users.updated_at, users.image, users.blurb HAVING 
-      COUNT(votes.voteable_id) > 0 ORDER BY vote_count DESC LIMIT 10
-=end      
-
       # The point of this function is to return rankings based on the difference between up and down votes
       # assuming equal weighting (i.e. a user with 1 up vote and 1 down vote has a Vote_Total of 0. 
       # First the votes table is joined twiced so that the Vote_Total can be calculated for every ID
       # Then this table is joined against the specific table passed to this function to allow for 
       # ranking of the items within that table based on the difference between up and down votes.
       def rank_tally(*args)
-	debugger
 	options = args.extract_options!
 
-	t = self
-	t.joins("LEFT OUTER JOIN (SELECT DISTINCT #{Vote.table_name}.*, 
+	t = self.joins("LEFT OUTER JOIN (SELECT DISTINCT #{Vote.table_name}.*, 
 	  (IFNULL(vfor.Votes_For, 0)-IFNULL(against.Votes_Against, 0)) AS Vote_Total
 	    FROM (#{Vote.table_name} LEFT JOIN
 	      (SELECT voteable_id, COUNT(vote) as Votes_Against FROM #{Vote.table_name} WHERE vote = 0 
-	       GROUP BY voteable_id) AS against ON #{Vote.table_name}.voteable_id = against.voteable_id)
+	       AND voteable_type = '#{self.name}' GROUP BY voteable_id) AS against ON #{Vote.table_name}.voteable_id = against.voteable_id)
 	    LEFT JOIN 
 	      (SELECT voteable_id, COUNT(vote) as Votes_For FROM #{Vote.table_name} WHERE vote = 1 
-	      GROUP BY voteable_id) as vfor ON #{Vote.table_name}.voteable_id = vfor.voteable_id) 
+	      AND voteable_type = '#{self.name}' GROUP BY voteable_id) as vfor ON #{Vote.table_name}.voteable_id = vfor.voteable_id) 
 	    AS joined_#{Vote.table_name} ON #{self.table_name}.#{self.primary_key} = 
 	      joined_#{Vote.table_name}.voteable_id")
 	
+	t = t.where("joined_#{Vote.table_name}.voteable_type = '#{self.name}'")
 	t = t.group("joined_#{Vote.table_name}.voteable_id, #{column_names_for_tally}")
         t = t.limit(options[:limit]) if options[:limit]
-        t = t.where("#{Vote.table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
-        t = t.where("#{Vote.table_name}.created_at <= ?", options[:end_at]) if options[:end_at]
+        t = t.where("joined_#{Vote.table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
+        t = t.where("joined_#{Vote.table_name}.created_at <= ?", options[:end_at]) if options[:end_at]
         t = t.where(options[:conditions]) if options[:conditions]
         t = options[:ascending] ? t.order("joined_#{Vote.table_name}.Vote_Total")
 	                                  : t.order("joined_#{Vote.table_name}.Vote_Total DESC")
-        
-        t = t.having("joined_#{Vote.table_name}.voteable_id > 0")
+			  
+        t = t.having(["COUNT(joined_#{Vote.table_name}.voteable_id) > 0",
+	        (options[:at_least] ? "joined_votes.Vote_Total >= #{sanitize(options[:at_least])}" : nil),
+		(options[:at_most] ? "joined_votes.Vote_Total <= #{sanitize(options[:at_most])}" : nil)
+		].compact.join(' AND '))
 	
 	t.select("#{self.table_name}.*, joined_#{Vote.table_name}.Vote_Total")
       end

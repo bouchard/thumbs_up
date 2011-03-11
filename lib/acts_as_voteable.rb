@@ -27,16 +27,16 @@ module ThumbsUp
 	t = self.joins("LEFT OUTER JOIN (SELECT DISTINCT #{Vote.table_name}.*, 
 	  (COALESCE(vfor.Votes_For, 0)-COALESCE(against.Votes_Against, 0)) AS Vote_Total
 	    FROM (#{Vote.table_name} LEFT JOIN
-	      (SELECT voteable_id, COUNT(vote) as Votes_Against FROM #{Vote.table_name} WHERE vote = FALSE 
+	      (SELECT DISTINCT voteable_id, COUNT(vote) as Votes_Against FROM #{Vote.table_name} WHERE vote = FALSE 
 	       AND voteable_type = '#{self.name}' GROUP BY voteable_id) AS against ON #{Vote.table_name}.voteable_id = against.voteable_id)
 	    LEFT JOIN 
-	      (SELECT voteable_id, COUNT(vote) as Votes_For FROM #{Vote.table_name} WHERE vote = TRUE 
+	      (SELECT DISTINCT voteable_id, COUNT(vote) as Votes_For FROM #{Vote.table_name} WHERE vote = TRUE 
 	      AND voteable_type = '#{self.name}' GROUP BY voteable_id) as vfor ON #{Vote.table_name}.voteable_id = vfor.voteable_id) 
 	    AS joined_#{Vote.table_name} ON #{self.table_name}.#{self.primary_key} = 
 	      joined_#{Vote.table_name}.voteable_id")
 	
 	t = t.where("joined_#{Vote.table_name}.voteable_type = '#{self.name}'")
-	t = t.group("joined_#{Vote.table_name}.voteable_id, #{column_names_for_tally}")
+	t = t.group("joined_#{Vote.table_name}.voteable_id, joined_#{Vote.table_name}.Vote_Total, #{column_names_for_tally}")
         t = t.limit(options[:limit]) if options[:limit]
         t = t.where("joined_#{Vote.table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
         t = t.where("joined_#{Vote.table_name}.created_at <= ?", options[:end_at]) if options[:end_at]

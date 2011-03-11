@@ -51,6 +51,7 @@ FROM (votes
       # Then this table is joined against the specific table passed to this function to allow for 
       # ranking of the items within that table based on the difference between up and down votes.
       def rank_tally(*args)
+	debugger
 	options = args.extract_options!
 
 	t = self

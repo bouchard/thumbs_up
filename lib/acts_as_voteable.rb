@@ -25,7 +25,7 @@ module ThumbsUp
 	options = args.extract_options!
 
 	t = self.joins("LEFT OUTER JOIN (SELECT DISTINCT #{Vote.table_name}.*, 
-	  (IFNULL(vfor.Votes_For, 0)-IFNULL(against.Votes_Against, 0)) AS Vote_Total
+	  (COALESCE(vfor.Votes_For, 0)-COALESCE(against.Votes_Against, 0)) AS Vote_Total
 	    FROM (#{Vote.table_name} LEFT JOIN
 	      (SELECT voteable_id, COUNT(vote) as Votes_Against FROM #{Vote.table_name} WHERE vote = FALSE 
 	       AND voteable_type = '#{self.name}' GROUP BY voteable_id) AS against ON #{Vote.table_name}.voteable_id = against.voteable_id)

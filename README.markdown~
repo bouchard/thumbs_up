@@ -98,21 +98,6 @@ This will select the Items with between 1 and 10,000 votes, the votes having bee
     :at_least    - Item must have at least X votes
     :at_most     - Item may not have more than X votes
 
-##### Tallying Rank
-
-Similar to tallying votes, but this will actually return voteable object collections based on a rating 
-system where up votes and down votes get equal rating.  For Instance, a voteable with 3 upvotes and 2 
-downvotes will have a rating in this instance of 1.
-
-##### Rank_Tally Options:
-    :start_at    - Restrict the votes to those created after a certain time
-    :end_at      - Restrict the votes to those created before a certain time
-    :conditions  - A piece of SQL conditions to add to the query
-    :limit       - The maximum number of voteables to return
-    :ascending   - Boolean Default false.  If specified true, results will be returned in ascending order (from bottom up)
-    :at_least    - Item must have at least X votes
-    :at_most     - Item may not have more than X votes
-
 #### Lower level queries
 
     positiveVoteCount = voteable.votes_for

@@ -10,6 +10,7 @@ class TestThumbsUp < Test::Unit::TestCase
   def test_acts_as_voter_instance_methods
     user_for = User.create(:name => 'david')
     user_against = User.create(:name => 'brady')
+    user_neutral = User.create(:name => 'tom')
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
 
     assert_not_nil user_for.vote_for(item)
@@ -44,17 +45,42 @@ class TestThumbsUp < Test::Unit::TestCase
       user_against.voted_which_way?(item, :foo)
     end
 
+    assert_not_nil user_neutral.vote_neutral(item)
+    assert_raises(ActiveRecord::RecordInvalid) do
+      user_neutral.vote_neutral(item)
+    end
+    assert_equal false, user_neutral.voted_for?(item)
+    assert_equal false, user_neutral.voted_against?(item)
+    assert_equal true, user_neutral.voted_neutral?(item)
+    assert_equal true, user_neutral.voted_on?(item)
+    assert_equal 1, user_neutral.vote_count
+    assert_equal 0, user_neutral.vote_count(:up)
+    assert_equal 0, user_neutral.vote_count(:down)
+    assert_equal 1, user_neutral.vote_count(:neutral)
+    assert_equal false, user_neutral.voted_which_way?(item, :up)
+    assert_equal false, user_neutral.voted_which_way?(item, :down)
+    assert_equal true, user_neutral.voted_which_way?(item, :neutral)
+    assert_raises(ArgumentError) do
+      user_neutral.voted_which_way?(item, :foo)
+    end
+
     assert_not_nil user_against.vote_exclusively_for(item)
     assert_equal true, user_against.voted_for?(item)
 
     assert_not_nil user_for.vote_exclusively_against(item)
     assert_equal true, user_for.voted_against?(item)
 
+    assert_not_nil user_neutral.vote_exclusively_neutral(item)
+    assert_equal true, user_neutral.voted_neutral?(item)
+
     user_for.clear_votes(item)
     assert_equal 0, user_for.vote_count
 
     user_against.clear_votes(item)
     assert_equal 0, user_against.vote_count
+
+    user_neutral.clear_votes(item)
+    assert_equal 0, user_neutral.vote_count
 
     assert_raises(ArgumentError) do
       user_for.vote(item, {:direction => :foo})
@@ -65,6 +91,7 @@ class TestThumbsUp < Test::Unit::TestCase
     user_for = User.create(:name => 'david')
     another_user_for = User.create(:name => 'name')
     user_against = User.create(:name => 'brady')
+    user_neutral = User.create(:name => 'tom')
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
 
     user_for.vote_for(item)
@@ -79,22 +106,29 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_equal 1, item.votes_against
     assert_equal 1, item.plusminus
 
-    assert_equal 3, item.votes_count
+    user_neutral.vote_neutral(item)
 
-    assert_equal 67, item.percent_for
-    assert_equal 33, item.percent_against
+    assert_equal 1, item.votes_neutral
+
+    assert_equal 4, item.votes_count
+
+    assert_equal 50, item.percent_for
+    assert_equal 25, item.percent_against
+    assert_equal 25, item.percent_neutral
 
     voters_who_voted = item.voters_who_voted
-    assert_equal 3, voters_who_voted.size
+    assert_equal 4, voters_who_voted.size
     assert voters_who_voted.include?(user_for)
     assert voters_who_voted.include?(another_user_for)
     assert voters_who_voted.include?(user_against)
+    assert voters_who_voted.include?(user_neutral)
 
     non_voting_user = User.create(:name => 'random')
 
     assert_equal true, item.voted_by?(user_for)
     assert_equal true, item.voted_by?(another_user_for)
     assert_equal true, item.voted_by?(user_against)
+    assert_equal true, item.voted_by?(user_neutral)
     assert_equal false, item.voted_by?(non_voting_user)
   end
 

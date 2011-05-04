@@ -6,12 +6,13 @@ class TestThumbsUp < Test::Unit::TestCase
     User.delete_all
     Item.delete_all
   end
-  
+
   def test_acts_as_voter_instance_methods
     user_for = User.create(:name => 'david')
     user_against = User.create(:name => 'brady')
+    user_neutral = User.create(:name => 'tom')
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
-    
+
     assert_not_nil user_for.vote_for(item)
     assert_raises(ActiveRecord::RecordInvalid) do
       user_for.vote_for(item)
@@ -27,7 +28,7 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_raises(ArgumentError) do
       user_for.voted_which_way?(item, :foo)
     end
-    
+
     assert_not_nil user_against.vote_against(item)
     assert_raises(ActiveRecord::RecordInvalid) do
       user_against.vote_against(item)
@@ -43,72 +44,108 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_raises(ArgumentError) do
       user_against.voted_which_way?(item, :foo)
     end
-    
+
+    assert_not_nil user_neutral.vote_neutral(item)
+    assert_raises(ActiveRecord::RecordInvalid) do
+      user_neutral.vote_neutral(item)
+    end
+    assert_equal false, user_neutral.voted_for?(item)
+    assert_equal false, user_neutral.voted_against?(item)
+    assert_equal true, user_neutral.voted_neutral?(item)
+    assert_equal true, user_neutral.voted_on?(item)
+    assert_equal 1, user_neutral.vote_count
+    assert_equal 0, user_neutral.vote_count(:up)
+    assert_equal 0, user_neutral.vote_count(:down)
+    assert_equal 1, user_neutral.vote_count(:neutral)
+    assert_equal false, user_neutral.voted_which_way?(item, :up)
+    assert_equal false, user_neutral.voted_which_way?(item, :down)
+    assert_equal true, user_neutral.voted_which_way?(item, :neutral)
+    assert_raises(ArgumentError) do
+      user_neutral.voted_which_way?(item, :foo)
+    end
+
     assert_not_nil user_against.vote_exclusively_for(item)
     assert_equal true, user_against.voted_for?(item)
 
     assert_not_nil user_for.vote_exclusively_against(item)
     assert_equal true, user_for.voted_against?(item)
-    
+
+    assert_not_nil user_neutral.vote_exclusively_neutral(item)
+    assert_equal true, user_neutral.voted_neutral?(item)
+
     user_for.clear_votes(item)
     assert_equal 0, user_for.vote_count
-    
+
     user_against.clear_votes(item)
     assert_equal 0, user_against.vote_count
-    
+
+    user_neutral.clear_votes(item)
+    assert_equal 0, user_neutral.vote_count
+
     assert_raises(ArgumentError) do
       user_for.vote(item, {:direction => :foo})
     end
   end
-  
+
   def test_acts_as_voteable_instance_methods
     user_for = User.create(:name => 'david')
     another_user_for = User.create(:name => 'name')
     user_against = User.create(:name => 'brady')
+    user_neutral = User.create(:name => 'tom')
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
 
     user_for.vote_for(item)
     another_user_for.vote_for(item)
-    
+
     assert_equal 2, item.votes_for
     assert_equal 0, item.votes_against
     assert_equal 2, item.plusminus
 
     user_against.vote_against(item)
-    
+
     assert_equal 1, item.votes_against
     assert_equal 1, item.plusminus
-    
-    assert_equal 3, item.votes_count
-    
+
+    user_neutral.vote_neutral(item)
+
+    assert_equal 1, item.votes_neutral
+
+    assert_equal 4, item.votes_count
+
+    assert_equal 50, item.percent_for
+    assert_equal 25, item.percent_against
+    assert_equal 25, item.percent_neutral
+
     voters_who_voted = item.voters_who_voted
-    assert_equal 3, voters_who_voted.size    
+    assert_equal 4, voters_who_voted.size
     assert voters_who_voted.include?(user_for)
     assert voters_who_voted.include?(another_user_for)
     assert voters_who_voted.include?(user_against)
-    
+    assert voters_who_voted.include?(user_neutral)
+
     non_voting_user = User.create(:name => 'random')
-    
+
     assert_equal true, item.voted_by?(user_for)
     assert_equal true, item.voted_by?(another_user_for)
     assert_equal true, item.voted_by?(user_against)
+    assert_equal true, item.voted_by?(user_neutral)
     assert_equal false, item.voted_by?(non_voting_user)
   end
-  
+
   def test_tally_empty
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
-    
+
     assert_equal 0, Item.tally.length
   end
-  
+
   def test_tally_starts_at
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     user = User.create(:name => 'david')
-    
+
     vote = user.vote_for(item)
     vote.created_at = 3.days.ago
     vote.save
-    
+
     assert_equal 0, Item.tally(:start_at => 2.days.ago).length
     assert_equal 1, Item.tally(:start_at => 4.days.ago).length
   end
@@ -116,46 +153,46 @@ class TestThumbsUp < Test::Unit::TestCase
   def test_tally_end_at
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     user = User.create(:name => 'david')
-    
+
     vote = user.vote_for(item)
     vote.created_at = 3.days.from_now
     vote.save
-    
+
     assert_equal 0, Item.tally(:end_at => 2.days.from_now).length
     assert_equal 1, Item.tally(:end_at => 4.days.from_now).length
   end
-  
+
   def test_tally_between_start_at_end_at
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     another_item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     user = User.create(:name => 'david')
-    
+
     vote = user.vote_for(item)
     vote.created_at = 2.days.ago
     vote.save
-    
+
     vote = user.vote_for(another_item)
     vote.created_at = 3.days.from_now
     vote.save
-    
+
     assert_equal 1, Item.tally(:start_at => 3.days.ago, :end_at => 2.days.from_now).length
     assert_equal 2, Item.tally(:start_at => 3.days.ago, :end_at => 4.days.from_now).length
   end
-  
+
   def test_rank_tally_empty
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
-    
+
     assert_equal 0, Item.rank_tally.length
   end
-  
+
   def test_rank_tally_starts_at
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     user = User.create(:name => 'david')
-    
+
     vote = user.vote_for(item)
     vote.created_at = 3.days.ago
     vote.save
-    
+
     assert_equal 0, Item.rank_tally(:start_at => 2.days.ago).length
     assert_equal 1, Item.rank_tally(:start_at => 4.days.ago).length
   end
@@ -163,63 +200,63 @@ class TestThumbsUp < Test::Unit::TestCase
   def test_rank_tally_end_at
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     user = User.create(:name => 'david')
-    
+
     vote = user.vote_for(item)
     vote.created_at = 3.days.from_now
     vote.save
-    
+
     assert_equal 0, Item.rank_tally(:end_at => 2.days.from_now).length
     assert_equal 1, Item.rank_tally(:end_at => 4.days.from_now).length
   end
-  
+
   def test_rank_tally_between_start_at_end_at
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     another_item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     user = User.create(:name => 'david')
-    
+
     vote = user.vote_for(item)
     vote.created_at = 2.days.ago
     vote.save
-    
+
     vote = user.vote_for(another_item)
     vote.created_at = 3.days.from_now
     vote.save
-    
+
     assert_equal 1, Item.rank_tally(:start_at => 3.days.ago, :end_at => 2.days.from_now).length
     assert_equal 2, Item.rank_tally(:start_at => 3.days.ago, :end_at => 4.days.from_now).length
   end
-  
+
   def test_rank_tally_inclusion
     user = User.create(:name => 'david')
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     item_not_included = Item.create(:name => 'Playstation', :description => 'Playstation console')
-    
+
     assert_not_nil user.vote_for(item)
-    
+
     assert (Item.rank_tally.include? item)
     assert (not Item.rank_tally.include? item_not_included)
   end
-  
+
   def test_rank_tally_default_ordering
     user = User.create(:name => 'david')
     item_for = Item.create(:name => 'XBOX', :description => 'XBOX console')
     item_against = Item.create(:name => 'Playstation', :description => 'Playstation console')
-    
+
     assert_not_nil user.vote_for(item_for)
     assert_not_nil user.vote_against(item_against)
-    
+
     assert_equal item_for, Item.rank_tally[0]
     assert_equal item_against, Item.rank_tally[1]
   end
-  
+
   def test_rank_tally_ascending_ordering
     user = User.create(:name => 'david')
     item_for = Item.create(:name => 'XBOX', :description => 'XBOX console')
     item_against = Item.create(:name => 'Playstation', :description => 'Playstation console')
-    
+
     assert_not_nil user.vote_for(item_for)
     assert_not_nil user.vote_against(item_against)
-    
+
     assert_equal item_for, Item.rank_tally(:ascending => true)[1]
     assert_equal item_against, Item.rank_tally(:ascending => true)[0]
   end

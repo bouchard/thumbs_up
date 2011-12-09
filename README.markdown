@@ -72,7 +72,15 @@ Usage
 Did the first user vote for the Car with id = 2 already?
 
     u = User.first
-	u.voted_on?(Car.find(2))
+    u.vote_for(Car.find(2))
+    u.voted_on?(Car.find(2)) #=> true
+	
+Did the first user vote for or against the Car with id = 2?
+
+    u = User.first
+    u.vote_for(Car.find(2))
+    u.voted_for?(Car.find(2)) #=> true
+    u.voted_against?(Car.find(2)) #=> false
 
 #### Tallying Votes
 

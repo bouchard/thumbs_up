@@ -50,10 +50,10 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_not_nil user_for.vote_exclusively_against(item)
     assert_equal true, user_for.voted_against?(item)
 
-    user_for.clear_votes(item)
+    user_for.unvote_for(item)
     assert_equal 0, user_for.vote_count
 
-    user_against.clear_votes(item)
+    user_against.unvote_for(item)
     assert_equal 0, user_against.vote_count
 
     assert_raises(ArgumentError) do

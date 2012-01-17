@@ -97,7 +97,8 @@ You can easily retrieve voteable object collections based on the properties of t
           :order => "items.name DESC"
       })
 
-This will select the Items with between 1 and 10,000 votes, the votes having been cast within the last two weeks (not including today), then display the 10 last items in an alphabetical list. This tallies all votes, regardless of whether they are +1 (up) or -1 (down).
+This will select the Items with between 1 and 10,000 votes, the votes having been cast within the last two weeks (not including today), then display the 10 last items in an alphabetical list. *This tallies all votes, regardless of whether they are +1 (up) or -1 (down).*
+
 
 ##### Tally Options:
     :start_at    - Restrict the votes to those created after a certain time
@@ -108,10 +109,21 @@ This will select the Items with between 1 and 10,000 votes, the votes having bee
     :at_least    - Item must have at least X votes
     :at_most     - Item may not have more than X votes
 
-##### Tallying Rank ("Plusminus")
+#### Tallying Rank ("Plusminus")
+
+**You most likely want to use this over the normal tally**
 
 This is similar to tallying votes, but this will return voteable object collections based on the sum of the differences between up and down votes (ups are +1, downs are -1). For Instance, a voteable with 3 upvotes and 2 
 downvotes will have a plusminus of 1.
+
+    @items = Item.plusminus_tally(
+      {  :at_least => 1,
+          :at_most => 10000,
+          :start_at => 2.weeks.ago,
+          :end_at => 1.day.ago,
+          :limit => 10,
+          :order => "items.name DESC"
+      })
 
 ##### Plusminus Tally Options:
     :start_at    - Restrict the votes to those created after a certain time

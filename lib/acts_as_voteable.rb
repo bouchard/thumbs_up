@@ -23,9 +23,9 @@ module ThumbsUp
       def plusminus_tally
         t = self.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.id = #{Vote.table_name}.voteable_id")
         t = t.order("plusminus DESC")
-        t = t.group("#{self.table_name}.id")
+        t = t.group("#{self.column_names_for_tally}")
         t = t.select("#{self.table_name}.*")
-        t = t.select("SUM(CASE CAST(#{Vote.table_name}.vote AS UNSIGNED) WHEN 1 THEN 1 WHEN 0 THEN -1 ELSE 0 END) AS plusminus")
+        t = t.select("SUM(CASE CAST(#{Vote.table_name}.vote AS #{ActiveRecord::Base.connection.type_to_sql(:integer)}) WHEN 1 THEN 1 WHEN 0 THEN -1 ELSE 0 END) AS plusminus")
         t = t.select("COUNT(#{Vote.table_name}.id) AS vote_count")
       end
 

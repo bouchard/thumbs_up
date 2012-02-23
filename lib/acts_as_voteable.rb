@@ -25,7 +25,7 @@ module ThumbsUp
         t = t.order("plusminus DESC")
         t = t.group("#{self.table_name}.id")
         t = t.select("#{self.table_name}.*")
-        t = t.select("SUM(CASE CAST(#{Vote.table_name}.vote AS UNSIGNED) WHEN 1 THEN 1 WHEN 0 THEN -1 ELSE 0 END) AS plusminus")
+        t = t.select("SUM(CASE CAST(#{Vote.table_name}.vote AS #{ActiveRecord::Base.connection.type_to_sql(:integer)}) WHEN 1 THEN 1 WHEN 0 THEN -1 ELSE 0 END) AS plusminus")
         t = t.select("COUNT(#{Vote.table_name}.id) AS vote_count")
       end
 

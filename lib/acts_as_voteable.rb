@@ -87,7 +87,7 @@ module ThumbsUp
       def voted_by?(voter)
         0 < Vote.where(
               :voteable_id => self.id,
-              :voteable_type => self.class.name,
+              :voteable_type => self.class.base_class.name,
               :voter_id => voter.id
             ).count
       end

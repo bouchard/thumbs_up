@@ -29,10 +29,10 @@ module ThumbsUp #:nodoc:
 
     module InstanceMethods
       def karma(options = {})
-        self.class.karmic_objects.collect do |object, attr|
-          v = object.where(["#{Vote.table_name}.vote = ?", true]).where(["#{self.class.table_name}.#{self.class.primary_key} = ?", self.id])
+        self.class.base_class.karmic_objects.collect do |object, attr|
+          v = object.where(["#{Vote.table_name}.vote = ?", true]).where(["#{self.class.base_class.table_name}.#{self.class.base_class.primary_key} = ?", self.id])
           v = v.joins("INNER JOIN #{Vote.table_name} ON #{Vote.table_name}.voteable_type = '#{object.to_s}' AND #{Vote.table_name}.voteable_id = #{object.table_name}.#{object.primary_key}")
-          v = v.joins("INNER JOIN #{self.class.table_name} ON #{self.class.table_name}.#{self.class.primary_key} = #{object.table_name}.#{attr[0]}")
+          v = v.joins("INNER JOIN #{self.class.base_class.table_name} ON #{self.class.base_class.table_name}.#{self.class.base_class.primary_key} = #{object.table_name}.#{attr[0]}")
           (v.count.to_f * attr[1]).round
         end.sum
       end

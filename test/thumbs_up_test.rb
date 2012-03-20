@@ -154,6 +154,18 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_equal 2, Item.tally.where('created_at > ?', 3.days.ago).where('created_at < ?', 4.days.from_now).length
   end
 
+  def test_tally_count
+    Item.tally.count
+  end
+
+  def test_tally_any
+    Item.tally.any?
+  end
+
+  def test_tally_empty
+    Item.tally.empty?
+  end
+
   def test_plusminus_tally_not_empty_without_conditions
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     assert_equal 1, Item.plusminus_tally.length
@@ -274,7 +286,19 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_equal item_for, Item.plusminus_tally.reorder('plusminus_tally ASC')[1]
     assert_equal item_against, Item.plusminus_tally.reorder('plusminus_tally ASC')[0]
   end
-  
+
+  def test_plusminus_tally_count
+    Item.plusminus_tally.count
+  end
+
+  def test_plusminus_tally_any
+    Item.plusminus_tally.any?
+  end
+
+  def test_plusminus_tally_empty
+    Item.plusminus_tally.empty?
+  end
+
   def test_karma
     users = (0..1).map{ |u| User.create(:name => "User #{u}") }
     items = (0..1).map{ |u| users[0].items.create(:name => "Item #{u}", :description => "Item #{u}") }

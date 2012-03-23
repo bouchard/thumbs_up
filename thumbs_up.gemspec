@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.name = "thumbs_up"
   s.version = ThumbsUp::VERSION
 
-  s.required_rubygems_version = '>= 1.7.0'
+  s.required_rubygems_version = '>= 1.6.0'
   s.homepage = "http://github.com/brady8/thumbs_up"
   s.summary = "Voting for ActiveRecord with multiple vote sources and karma calculation."
   s.description = "ThumbsUp provides dead-simple voting capabilities to ActiveRecord models with karma calculation, a la stackoverflow.com."

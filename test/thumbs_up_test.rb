@@ -24,6 +24,7 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_equal 0, user_for.vote_count(:down)
     assert_equal true, user_for.voted_which_way?(item, :up)
     assert_equal false, user_for.voted_which_way?(item, :down)
+    assert_equal 1, user.voted_objects(Item).count
     assert_raises(ArgumentError) do
       user_for.voted_which_way?(item, :foo)
     end

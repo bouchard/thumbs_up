@@ -49,6 +49,10 @@ module ThumbsUp #:nodoc:
         voted_which_way?(voteable, :down)
       end
 
+      def voted_objects(voteable_klass)
+        voteable_klass.includes("votes").where(:votes => {:voter_id => self.id, :voter_type => self.class.base_class.name, :voteable_type => voteable_klass.base_class.name})
+      end
+
       def voted_on?(voteable)
         0 < Vote.where(
               :voter_id => self.id,

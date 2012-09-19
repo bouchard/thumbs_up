@@ -307,4 +307,17 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_equal 4, users[0].karma
     assert_equal 0, users[1].karma
   end
+
+  def test_plusminus_tally_scopes_by_voteable_type
+    user = User.create(:name => 'david')
+    item = Item.create(:name => 'XBOX', :description => 'XBOX console')
+    another_item = OtherItem.create(:name => 'Playstation', :description => 'Playstation console')
+
+    user.vote_for(item)
+    user.vote_for(another_item)
+
+    assert_equal 1, Item.plusminus_tally.sum(&:plusminus_tally).to_i
+    assert_equal 1, OtherItem.plusminus_tally.sum(&:plusminus_tally).to_i
+  end
+
 end

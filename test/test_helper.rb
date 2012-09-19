@@ -75,6 +75,12 @@ ActiveRecord::Schema.define do
     t.string  :name
     t.string  :description
   end
+
+  create_table :other_items, :force => true do |t|
+    t.integer :user_id
+    t.string  :name
+    t.string  :description
+  end
 end
 
 require 'thumbs_up'
@@ -96,6 +102,11 @@ class Vote < ActiveRecord::Base
 end
 
 class Item < ActiveRecord::Base
+  acts_as_voteable
+  belongs_to :user
+end
+
+class OtherItem < ActiveRecord::Base
   acts_as_voteable
   belongs_to :user
 end

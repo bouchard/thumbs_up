@@ -26,7 +26,7 @@ module ThumbsUp
       def plusminus_tally(params = {})
         t = self.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.id = #{Vote.table_name}.voteable_id AND #{Vote.table_name}.voteable_type = '#{self.name}'")
         t = t.order("plusminus_tally DESC")
-        t = t.group("#{self.table_name}.id")
+        t = t.group(column_names_for_tally)
         t = t.select("#{self.table_name}.*")
         if mysql?
           table = "CAST(#{Vote.table_name}.vote AS UNSIGNED)"
@@ -57,7 +57,7 @@ module ThumbsUp
       def tally(*args)
         t = self.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.id = #{Vote.table_name}.voteable_id")
         t = t.order("vote_count DESC")
-        t = t.group("#{self.table_name}.id")
+        t = t.group(column_names_for_tally)
         t = t.select("#{self.table_name}.*")
         t = t.select("COUNT(#{Vote.table_name}.id) AS vote_count")
       end

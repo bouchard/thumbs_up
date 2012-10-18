@@ -32,6 +32,10 @@ module ThumbsUp
           table = "CAST(#{Vote.table_name}.vote AS UNSIGNED)"
           true_value = '1'
           false_value = '0'
+        elsif sqlite?
+          table = "#{Vote.table_name}.vote"
+          true_value = 'votes.vote = \'true\''
+          false_value = 'votes.vote = \'false\''
         else
           table = "#{Vote.table_name}.vote"
           true_value = 'true'

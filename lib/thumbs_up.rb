@@ -8,6 +8,10 @@ module ThumbsUp
     def mysql?
       ActiveRecord::Base.connection.adapter_name == 'MySQL'
     end
+
+    def sqlite?
+      ActiveRecord::Base.connection.adapter_name == 'SQLite'
+    end
   end
 end
 

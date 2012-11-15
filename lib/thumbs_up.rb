@@ -4,9 +4,12 @@ require 'has_karma'
 
 module ThumbsUp
   module Base
-    # Check if we're connected to a MySQL database.
-    def mysql?
-      ActiveRecord::Base.connection.adapter_name == 'MySQL'
+    def quoted_true
+      ActiveRecord::Base.connection.quoted_true
+    end
+
+    def quoted_false
+      ActiveRecord::Base.connection.quoted_false
     end
   end
 end

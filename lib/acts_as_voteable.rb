@@ -28,19 +28,10 @@ module ThumbsUp
         t = t.order("plusminus_tally DESC")
         t = t.group(column_names_for_tally)
         t = t.select("#{self.table_name}.*")
-        if mysql?
-          table = "CAST(#{Vote.table_name}.vote AS UNSIGNED)"
-          true_value = '1'
-          false_value = '0'
-        else
-          table = "#{Vote.table_name}.vote"
-          true_value = 'true'
-          false_value = 'false'
-        end
-        t = t.select("SUM(CASE #{table} WHEN #{true_value} THEN 1 WHEN #{false_value} THEN -1 ELSE 0 END) AS plusminus_tally")
+        t = t.select("SUM(CASE #{Vote.table_name}.vote WHEN #{quoted_true} THEN 1 WHEN #{quoted_false} THEN -1 ELSE 0 END) AS plusminus_tally")
         if params[:separate_updown]
-          t = t.select("SUM(CASE #{table} WHEN #{true_value} THEN 1 WHEN #{false_value} THEN 0 ELSE 0 END) AS up")
-          t = t.select("SUM(CASE #{table} WHEN #{true_value} THEN 0 WHEN #{false_value} THEN 1 ELSE 0 END) AS down")
+          t = t.select("SUM(CASE #{Vote.table_name}.vote WHEN #{quoted_true} THEN 1 WHEN #{quoted_false} THEN 0 ELSE 0 END) AS up")
+          t = t.select("SUM(CASE #{Vote.table_name}.vote WHEN #{quoted_true} THEN 0 WHEN #{quoted_false} THEN 1 ELSE 0 END) AS down")
         end
         t = t.select("COUNT(#{Vote.table_name}.id) AS vote_count")
       end

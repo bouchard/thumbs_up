@@ -30,12 +30,14 @@ task :release => :build do
   system "rm thumbs_up-#{ThumbsUp::VERSION}.gem"
 end
 
-task :test_both_databases do
-  # Test both MySQL and Postgres.
+task :test_all_databases do
+  # Test MySQL, Postgres and SQLite3
   ENV['DB'] = 'mysql'
   Rake::Task['test'].execute
   ENV['DB'] = 'postgres'
   Rake::Task['test'].execute
+  ENV['DB'] = 'sqlite3'
+  Rake::Task['test'].execute
 end
 
-task :default => :test_both_databases
+task :default => :test_all_databases

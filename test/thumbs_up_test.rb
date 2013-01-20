@@ -71,10 +71,10 @@ class TestThumbsUp < Test::Unit::TestCase
     user_for = User.create(:name => 'david')
     another_user_for = User.create(:name => 'name')
     user_against = User.create(:name => 'brady')
+    another_user_against = User.create(:name => 'name')
 
     user_for.vote_for(item)
     another_user_for.vote_for(item)
-
     # Use #reload to force reloading of votes from the database,
     # otherwise these tests fail after "assert_equal 0, item.ci_plusminus" caches
     # the votes. We hack this as caching is the correct behavious, per-request,
@@ -102,6 +102,18 @@ class TestThumbsUp < Test::Unit::TestCase
     assert voters_who_voted.include?(user_for)
     assert voters_who_voted.include?(another_user_for)
     assert voters_who_voted.include?(user_against)
+
+    voters_who_voted_for = item.voters_who_voted_for
+    assert_equal 2, voters_who_voted_for.size
+    assert voters_who_voted_for.include?(user_for)
+    assert voters_who_voted_for.include?(another_user_for)
+
+    another_user_against.vote_against(item)
+
+    voters_who_voted_against = item.voters_who_voted_against
+    assert_equal 2, voters_who_voted_against.size
+    assert voters_who_voted_against.include?(user_against)
+    assert voters_who_voted_against.include?(another_user_against)
 
     non_voting_user = User.create(:name => 'random')
 

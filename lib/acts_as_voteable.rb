@@ -106,6 +106,14 @@ module ThumbsUp
         votes.map(&:voter).uniq
       end
 
+      def voters_who_voted_for
+          votes.where(:vote => true).map(&:voter).uniq
+      end
+
+      def voters_who_voted_against
+          votes.where(:vote => false).map(&:voter).uniq
+      end
+      
       def voted_by?(voter)
         0 < Vote.where(
               :voteable_id => self.id,

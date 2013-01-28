@@ -27,7 +27,7 @@ module ThumbsUp
       # Post.plusminus_tally(:disable_ordering => true)
       def plusminus_tally(params = {})
         t = self.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.id = #{Vote.table_name}.voteable_id AND #{Vote.table_name}.voteable_type = '#{self.name}'")
-        if params[:disable_ordering]
+        unless params[:disable_ordering]
           t = t.order("plusminus_tally DESC")
         end 
         t = t.group(column_names_for_tally)

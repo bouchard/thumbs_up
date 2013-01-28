@@ -23,9 +23,13 @@ module ThumbsUp
       # i.e. Posts.tally.where('votes.created_at > ?', 2.days.ago)
       # You can also have the upvotes and downvotes returned separately in the same query:
       # Post.plusminus_tally(:separate_updown => true)
+      # You can also tally without any ordering:
+      # Post.plusminus_tally(:disable_ordering => true)
       def plusminus_tally(params = {})
         t = self.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.id = #{Vote.table_name}.voteable_id AND #{Vote.table_name}.voteable_type = '#{self.name}'")
-        t = t.order("plusminus_tally DESC")
+        if params[:disable_ordering]
+          t = t.order("plusminus_tally DESC")
+        end 
         t = t.group(column_names_for_tally)
         t = t.select("#{self.table_name}.*")
         t = t.select("SUM(CASE #{Vote.table_name}.vote WHEN #{quoted_true} THEN 1 WHEN #{quoted_false} THEN -1 ELSE 0 END) AS plusminus_tally")

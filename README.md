@@ -142,14 +142,32 @@ You can also use `--unique-voting false` when running the generator command:
 
 Testing is a bit more than trivial now as our #tally and #plusminus_tally queries don't function properly under SQLite. To set up for testing:
 
-```
-$ mysql -uroot # You may have set a password locally. Change as needed.
-  > GRANT ALL PRIVILEGES ON 'thumbs_up_test' to 'test'@'localhost' IDENTIFIED BY 'test';
-  > CREATE DATABASE 'thumbs_up_test';
-  > exit;
+* mysql
 
-$ rake # Runs the test suite.
-```
+    ```
+    $ mysql -uroot # You may have set a password locally. Change as needed.
+      > CREATE USER 'test'@'localhost' IDENTIFIED BY 'test';
+      > CREATE DATABASE thumbs_up_test;
+      > USE thumbs_up_test;
+      > GRANT ALL PRIVILEGES ON thumbs_up_test TO 'test'@'localhost' IDENTIFIED BY 'test';
+      > exit;
+    ```
+* Postgres
+
+    ```
+    $ psql # You may have set a password locally. Change as needed.
+      > CREATE ROLE test;
+      > ALTER ROLE test WITH SUPERUSER;
+      > ALTER ROLE test WITH LOGIN;
+      > CREATE DATABASE thumbs_up_test;
+      > GRANT ALL PRIVILEGES ON DATABASE thumbs_up_test to test;
+      > \q
+    ```
+* Run tests
+
+    ```
+    $ rake # Runs the test suite against all adapters.
+    ```
 
 Credits
 =======

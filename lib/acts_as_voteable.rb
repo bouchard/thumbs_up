@@ -8,7 +8,10 @@ module ThumbsUp
 
     module ClassMethods
       def acts_as_voteable
-        has_many :votes, :as => :voteable, :dependent => :destroy
+        has_many ThumbsUp.configuration[:voteable_relationship_name],
+                 :as => :voteable,
+                 :dependent => :destroy,
+                 :class_name => "Vote"
 
         include ThumbsUp::ActsAsVoteable::InstanceMethods
         extend  ThumbsUp::ActsAsVoteable::SingletonMethods
@@ -61,20 +64,25 @@ module ThumbsUp
 
     module InstanceMethods
 
+      # wraps the dynamic, configured, relationship name
+      def _votes_by
+        self.send(ThumbsUp.configuration[:voteable_relationship_name])
+      end
+
       def votes_for
-        self.votes.where(:vote => true).count
+        self._votes_by.where(:vote => true).count
       end
 
       def votes_against
-        self.votes.where(:vote => false).count
+        self._votes_by.where(:vote => false).count
       end
 
       def percent_for
-        (votes_for.to_f * 100 / (self.votes.size + 0.0001)).round
+        (votes_for.to_f * 100 / (self._votes_by.size + 0.0001)).round
       end
 
       def percent_against
-        (votes_against.to_f * 100 / (self.votes.size + 0.0001)).round
+        (votes_against.to_f * 100 / (self._votes_by.size + 0.0001)).round
       end
 
       # You'll probably want to use this method to display how 'good' a particular voteable
@@ -113,7 +121,7 @@ module ThumbsUp
       def voters_who_voted_against
           votes.where(:vote => false).map(&:voter).uniq
       end
-      
+
       def voted_by?(voter)
         0 < Vote.where(
               :voteable_id => self.id,

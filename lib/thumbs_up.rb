@@ -1,17 +1,36 @@
 require 'acts_as_voteable'
 require 'acts_as_voter'
 require 'has_karma'
+require 'thumbs_up/configuration'
+require 'thumbs_up/base'
+require 'thumbs_up/version'
 
 module ThumbsUp
-  module Base
-    def quoted_true
-      ActiveRecord::Base.connection.quoted_true
+
+  class << self
+
+    # An ThumbsUp::Configuration object. Must act like a hash and return sensible
+    # values for all ThumbsUp::Configuration::OPTIONS. See ThumbsUp::Configuration.
+    attr_writer :configuration
+
+    # Call this method to modify defaults in your initializers.
+    #
+    # @example
+    #   ThumbsUp.configure do |config|
+    #     config.voteable_relationship_name = :votes_by
+    #     config.voter_relationship_name    = :votes_on
+    #   end
+    def configure
+      yield(configuration)
     end
 
-    def quoted_false
-      ActiveRecord::Base.connection.quoted_false
+    # The configuration object.
+    # @see I18::Airbrake.configure
+    def configuration
+      @configuration ||= Configuration.new
     end
   end
+
 end
 
 ActiveRecord::Base.send(:include, ThumbsUp::ActsAsVoteable)

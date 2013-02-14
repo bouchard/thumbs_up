@@ -12,8 +12,11 @@ module ThumbsUp #:nodoc:
         # If you want to nullify (and keep the votes), you'll need to remove
         # the unique constraint on the [ voter, voteable ] index in the database.
         # has_many :votes, :as => :voter, :dependent => :nullify
-        # Destroy votes when a user is deleted.
-        has_many :votes, :as => :voter, :dependent => :destroy
+        # Destroy voter's votes when the voter is deleted.
+        has_many ThumbsUp.configuration[:voter_relationship_name],
+                 :as => :voter,
+                 :dependent => :destroy,
+                 :class_name => "Vote"
 
         include ThumbsUp::ActsAsVoter::InstanceMethods
         extend  ThumbsUp::ActsAsVoter::SingletonMethods
@@ -26,6 +29,11 @@ module ThumbsUp #:nodoc:
 
     # This module contains instance methods
     module InstanceMethods
+
+      # wraps the dynamic, configured, relationship name
+      def _votes_on
+        self.send(ThumbsUp.configuration[:voteable_relationship_name])
+      end
 
       # Usage user.vote_count(:up)  # All +1 votes
       #       user.vote_count(:down) # All -1 votes

@@ -25,7 +25,7 @@ module ThumbsUp
     end
 
     # The configuration object.
-    # @see I18::Airbrake.configure
+    # @see ThumbsUp::Configuration
     def configuration
       @configuration ||= Configuration.new
     end

@@ -7,6 +7,68 @@ class TestThumbsUp < Test::Unit::TestCase
     Item.delete_all
   end
 
+  def test_voting_with_vateable_tag
+    user_for = User.create(:name => 'ivan')
+    user_against = User.create(:name => 'petr')
+    item = Item.create(:name => 'XBOX2', :description => 'XBOX2 console')
+
+    assert_not_nil user_for.vote_for(item, 'test_tag')
+    assert_raises(ActiveRecord::RecordInvalid) do
+      user_for.vote_for(item, 'test_tag')
+    end
+    assert_equal true, user_for.voted_for?(item, 'test_tag')
+    assert_equal false, user_for.voted_against?(item, 'test_tag')
+    assert_equal 1, user_for.vote_count
+    assert_equal 1, user_for.vote_count(:up)
+    assert_equal 0, user_for.vote_count(:down)
+    assert_equal 1, user_for.vote_count('test_tag')
+    assert_equal 1, user_for.vote_count(:up, 'test_tag')
+    assert_equal 0, user_for.vote_count(:down, 'test_tag')
+    assert_equal true, user_for.voted_which_way?(item, :up)
+    assert_equal false, user_for.voted_which_way?(item, :down)
+    assert_equal true, user_for.voted_which_way?(item, :up, 'test_tag')
+    assert_equal false, user_for.voted_which_way?(item, :down, 'test_tag')
+    assert_equal 1, user_for.votes.where(:voteable_type => 'Item', voteable_tag: 'test_tag').count
+    assert_equal 0, user_for.votes.where(:voteable_type => 'AnotherItem').count
+    assert_equal 1, user_for.votes.where(:voteable_type => 'Item').count
+    assert_equal 0, user_for.votes.where(:voteable_type => 'AnotherItem').count
+    assert_raises(ArgumentError) do
+      user_for.voted_which_way?(item, :foo)
+    end
+
+    assert_not_nil user_against.vote_against(item, 'test_tag')
+    assert_raises(ActiveRecord::RecordInvalid) do
+      user_against.vote_against(item, 'test_tag')
+    end
+    assert_equal false, user_against.voted_for?(item, 'test_tag')
+    assert_equal true, user_against.voted_against?(item, 'test_tag')
+    assert_equal true, user_against.voted_on?(item, 'test_tag')
+    assert_equal 1, user_against.vote_count
+    assert_equal 0, user_against.vote_count(:up)
+    assert_equal 1, user_against.vote_count(:down)
+    assert_equal 1, user_against.vote_count('test_tag')
+    assert_equal 0, user_against.vote_count(:up, 'test_tag')
+    assert_equal 1, user_against.vote_count(:down, 'test_tag')
+    assert_equal false, user_against.voted_which_way?(item, :up, 'test_tag')
+    assert_equal true, user_against.voted_which_way?(item, :down, 'test_tag')
+
+    assert_not_nil user_against.vote_exclusively_for(item, 'test_tag')
+    assert_equal true, user_against.voted_for?(item, 'test_tag')
+
+    assert_not_nil user_against.vote_exclusively_for(item, 'test')
+    assert_equal true, user_against.voted_for?(item, 'test')
+    assert_equal true, user_against.voted_for?(item, 'test_tag')
+
+    assert_not_nil user_for.vote_exclusively_against(item, 'test_tag')
+    assert_equal true, user_for.voted_against?(item, 'test_tag')
+
+    user_for.unvote_for(item)
+    assert_equal 0, user_for.vote_count
+
+    user_against.unvote_for(item)
+    assert_equal 0, user_against.vote_count
+  end
+
   def test_acts_as_voter_instance_methods
     user_for = User.create(:name => 'david')
     user_against = User.create(:name => 'brady')
@@ -61,6 +123,64 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_raises(ArgumentError) do
       user_for.vote(item, {:direction => :foo})
     end
+  end
+
+  def test_acts_as_voteable_instance_methods_with_tag
+    item = Item.create(:name => 'XBOX2', :description => 'XBOX2 console')
+
+    assert_equal 0, item.ci_plusminus
+
+    user_for = User.create(:name => 'david')
+    another_user_for = User.create(:name => 'name')
+    user_against = User.create(:name => 'brady')
+    another_user_against = User.create(:name => 'name')
+
+    user_for.vote_for(item, 'test_tag')
+    another_user_for.vote_for(item, 'test_tag')
+    # Use #reload to force reloading of votes from the database,
+    # otherwise these tests fail after "assert_equal 0, item.ci_plusminus" caches
+    # the votes. We hack this as caching is the correct behavious, per-request,
+    # in production.
+    item.reload
+
+    assert_equal 2, item.votes_for('test_tag')
+    assert_equal 0, item.votes_against('test_tag')
+    assert_equal 2, item.plusminus('test_tag')
+
+    user_against.vote_against(item, 'test_tag')
+
+    assert_equal 1, item.votes_against('test_tag')
+    assert_equal 1, item.plusminus('test_tag')
+
+    assert_equal 3, item.votes_count('test_tag')
+
+    assert_equal 67, item.percent_for('test_tag')
+    assert_equal 33, item.percent_against('test_tag')
+
+    voters_who_voted = item.voters_who_voted('test_tag')
+    assert_equal 3, voters_who_voted.size
+    assert voters_who_voted.include?(user_for)
+    assert voters_who_voted.include?(another_user_for)
+    assert voters_who_voted.include?(user_against)
+
+    voters_who_voted_for = item.voters_who_voted_for('test_tag')
+    assert_equal 2, voters_who_voted_for.size
+    assert voters_who_voted_for.include?(user_for)
+    assert voters_who_voted_for.include?(another_user_for)
+
+    another_user_against.vote_against(item, 'test_tag')
+
+    voters_who_voted_against = item.voters_who_voted_against('test_tag')
+    assert_equal 2, voters_who_voted_against.size
+    assert voters_who_voted_against.include?(user_against)
+    assert voters_who_voted_against.include?(another_user_against)
+
+    non_voting_user = User.create(:name => 'random')
+
+    assert_equal true, item.voted_by?(user_for, 'test_tag')
+    assert_equal true, item.voted_by?(another_user_for, 'test_tag')
+    assert_equal true, item.voted_by?(user_against, 'test_tag')
+    assert_equal false, item.voted_by?(non_voting_user, 'test_tag')
   end
 
   def test_acts_as_voteable_instance_methods

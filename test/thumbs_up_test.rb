@@ -61,6 +61,16 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_raises(ArgumentError) do
       user_for.vote(item, {:direction => :foo})
     end
+
+    vote = user_against.vote(item, :exclusive => true, :direction => :down)
+    assert_equal true, user_against.voted_against?(item)
+    # Make sure the vote record was returned by the :vote method
+    assert_equal true, vote.is_a?(Vote)
+
+    vote = user_for.vote(item, :exclusive => true, :direction => :up)
+    assert_equal true, user_for.voted_for?(item)
+    # Make sure the vote record was returned by the :vote method
+    assert_equal true, vote.is_a?(Vote)
   end
 
   def test_acts_as_voteable_instance_methods
@@ -250,11 +260,11 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_not_nil user.vote_for(item)
 
     if ActiveRecord::Base.connection.adapter_name == 'MySQL'
-      assert (Item.plusminus_tally.having('vote_count > 0').include? item)
-      assert (not Item.plusminus_tally.having('vote_count > 0').include? item_not_included)
+      assert(Item.plusminus_tally.having('vote_count > 0').include?(item))
+      assert(!Item.plusminus_tally.having('vote_count > 0').include?(item_not_included))
     else
-      assert (Item.plusminus_tally.having('COUNT(votes.id) > 0').include? item)
-      assert (not Item.plusminus_tally.having('COUNT(votes.id) > 0').include? item_not_included)
+      assert(Item.plusminus_tally.having('COUNT(votes.id) > 0').include?(item))
+      assert(!Item.plusminus_tally.having('COUNT(votes.id) > 0').include?(item_not_included))
     end
   end
 

@@ -88,7 +88,10 @@ module ThumbsUp #:nodoc:
           self.unvote_for(voteable)
         end
         direction = (options[:direction].to_sym == :up)
-        Vote.create!(:vote => direction, :voteable => voteable, :voter => self)
+        # create! does not return the created object
+        v = Vote.new(:vote => direction, :voteable => voteable, :voter => self)
+        v.save!
+        v
       end
 
       def unvote_for(voteable)

@@ -11,6 +11,7 @@ class TestThumbsUp < Test::Unit::TestCase
     user_for = User.create(:name => 'david')
     user_against = User.create(:name => 'brady')
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
+    item2= Item.create(:name => 'PS3', :description => 'Playstation 3')
 
     assert_not_nil user_for.vote_for(item)
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -24,6 +25,7 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_equal 0, user_for.vote_count(:down)
     assert_equal true, user_for.voted_which_way?(item, :up)
     assert_equal false, user_for.voted_which_way?(item, :down)
+    assert_equal true, user_for.voted_how?(item)
     assert_equal 1, user_for.votes.where(:voteable_type => 'Item').count
     assert_equal 0, user_for.votes.where(:voteable_type => 'AnotherItem').count
     assert_raises(ArgumentError) do
@@ -36,6 +38,7 @@ class TestThumbsUp < Test::Unit::TestCase
     end
     assert_equal false, user_against.voted_for?(item)
     assert_equal true, user_against.voted_against?(item)
+    assert_equal false, user_against.voted_how?(item)
     assert_equal true, user_against.voted_on?(item)
     assert_equal 1, user_against.vote_count
     assert_equal 0, user_against.vote_count(:up)
@@ -71,6 +74,8 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_equal true, user_for.voted_for?(item)
     # Make sure the vote record was returned by the :vote method
     assert_equal true, vote.is_a?(Vote)
+
+    assert_nil user_for.voted_how?(item2)
   end
 
   def test_acts_as_voteable_instance_methods

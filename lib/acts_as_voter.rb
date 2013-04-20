@@ -116,6 +116,22 @@ module ThumbsUp #:nodoc:
             ).count
       end
 
+      def voted_how?(voteable)
+        votes = Vote.where(
+              :voter_id => self.id,
+              :voter_type => self.class.base_class.name,
+              :voteable_id => voteable.id,
+              :voteable_type => voteable.class.base_class.name
+            ).map(&:vote) #in case votes is premitted to be duplicated
+        if votes.count == 1
+          votes.first
+        elsif votes.count == 0
+          nil
+        else
+          votes
+        end
+      end
+
     end
   end
 end

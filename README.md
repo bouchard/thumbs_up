@@ -71,7 +71,8 @@ Usage
     voter.vote_exclusively_for(voteable)	# Removes any previous votes by that particular voter, and votes for.
     voter.vote_exclusively_against(voteable)	# Removes any previous votes by that particular voter, and votes against.
 
-    vote.unvote_for(voteable)  # Clears all votes for that user
+    voter.unvote_for(voteable)  # Clears all votes for that user
+    voter.clear_votes(voteable) # Also clears all votes
 
 ### Querying votes
 

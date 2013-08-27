@@ -8,6 +8,10 @@ class TestThumbsUp < Test::Unit::TestCase
   end
 
   def test_acts_as_voter_instance_methods
+    # Because these are set in several places we need to ensure the defaults are set here.
+    ThumbsUp.configuration.voteable_relationship_name = :votes
+    ThumbsUp.configuration.voter_relationship_name = :votes
+
     user_for = User.create(:name => 'david')
     user_against = User.create(:name => 'brady')
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
@@ -79,6 +83,10 @@ class TestThumbsUp < Test::Unit::TestCase
   end
 
   def test_acts_as_voteable_instance_methods
+    # Because these are set in several places we need to ensure the defaults are set here.
+    ThumbsUp.configuration.voteable_relationship_name = :votes
+    ThumbsUp.configuration.voter_relationship_name = :votes
+
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
 
     assert_equal 0, item.ci_plusminus
@@ -138,6 +146,139 @@ class TestThumbsUp < Test::Unit::TestCase
     assert_equal false, item.voted_by?(non_voting_user)
   end
 
+  def test_acts_as_voter_configuration
+    ThumbsUp.configuration.voteable_relationship_name = :votes_on
+    ThumbsUp.configuration.voter_relationship_name = :votes_by
+
+    user_for = UserCustom.create(:name => 'david')
+    user_against = UserCustom.create(:name => 'brady')
+    item = ItemCustom.create(:name => 'XBOX', :description => 'XBOX console')
+
+    # We have changed the name of the relationship, so `votes` is not defined.
+    assert_raises(NoMethodError) do
+      user_for.votes
+    end
+
+    assert_not_nil user_for.vote_for(item)
+    assert_raises(ActiveRecord::RecordInvalid) do
+      user_for.vote_for(item)
+    end
+    assert_equal true, user_for.voted_for?(item)
+    assert_equal false, user_for.voted_against?(item)
+    assert_equal true, user_for.voted_on?(item)
+    assert_equal 1, user_for.vote_count
+    assert_equal 1, user_for.vote_count(:up)
+    assert_equal 0, user_for.vote_count(:down)
+    assert_equal true, user_for.voted_which_way?(item, :up)
+    assert_equal false, user_for.voted_which_way?(item, :down)
+    assert_equal 1, user_for.votes_by.where(:voteable_type => 'ItemCustom').count
+    assert_equal 0, user_for.votes_by.where(:voteable_type => 'AnotherItem').count
+    assert_raises(ArgumentError) do
+      user_for.voted_which_way?(item, :foo)
+    end
+
+    assert_not_nil user_against.vote_against(item)
+    assert_raises(ActiveRecord::RecordInvalid) do
+      user_against.vote_against(item)
+    end
+    assert_equal false, user_against.voted_for?(item)
+    assert_equal true, user_against.voted_against?(item)
+    assert_equal true, user_against.voted_on?(item)
+    assert_equal 1, user_against.vote_count
+    assert_equal 0, user_against.vote_count(:up)
+    assert_equal 1, user_against.vote_count(:down)
+    assert_equal false, user_against.voted_which_way?(item, :up)
+    assert_equal true, user_against.voted_which_way?(item, :down)
+    assert_raises(ArgumentError) do
+      user_against.voted_which_way?(item, :foo)
+    end
+
+    assert_not_nil user_against.vote_exclusively_for(item)
+    assert_equal true, user_against.voted_for?(item)
+
+    assert_not_nil user_for.vote_exclusively_against(item)
+    assert_equal true, user_for.voted_against?(item)
+
+    user_for.unvote_for(item)
+    assert_equal 0, user_for.vote_count
+
+    user_against.unvote_for(item)
+    assert_equal 0, user_against.vote_count
+
+    assert_raises(ArgumentError) do
+      user_for.vote(item, {:direction => :foo})
+    end
+  end
+
+  def test_acts_as_voteable_configuration
+    ThumbsUp.configuration.voteable_relationship_name = :votes_on
+    ThumbsUp.configuration.voter_relationship_name = :votes_by
+
+    item = ItemCustom.create(:name => 'XBOX', :description => 'XBOX console')
+
+    assert_equal 0, item.ci_plusminus
+
+    user_for = UserCustom.create(:name => 'david')
+    another_user_for = UserCustom.create(:name => 'name')
+    user_against = UserCustom.create(:name => 'brady')
+    another_user_against = UserCustom.create(:name => 'name')
+
+    # We have changed the name of the relationship, so `votes` is not defined.
+    assert_raises(NoMethodError) do
+      item.votes
+    end
+
+    user_for.vote_for(item)
+    another_user_for.vote_for(item)
+    # Use #reload to force reloading of votes from the database,
+    # otherwise these tests fail after "assert_equal 0, item.ci_plusminus" caches
+    # the votes. We hack this as caching is the correct behavious, per-request,
+    # in production.
+    item.reload
+
+    assert_equal 2, item.votes_for
+    assert_equal 0, item.votes_against
+    assert_equal 2, item.plusminus
+    assert_in_delta 0.34, item.ci_plusminus, 0.01
+
+    user_against.vote_against(item)
+
+    assert_equal 1, item.votes_against
+    assert_equal 1, item.plusminus
+    assert_in_delta 0.20, item.ci_plusminus, 0.01
+
+    assert_equal 3, item.votes_count
+
+    assert_equal 67, item.percent_for
+    assert_equal 33, item.percent_against
+
+    voters_who_voted = item.voters_who_voted
+    assert_equal 3, voters_who_voted.size
+    assert voters_who_voted.include?(user_for)
+    assert voters_who_voted.include?(another_user_for)
+    assert voters_who_voted.include?(user_against)
+
+    voters_who_voted_for = item.voters_who_voted_for
+    assert_equal 2, voters_who_voted_for.size
+    assert voters_who_voted_for.include?(user_for)
+    assert voters_who_voted_for.include?(another_user_for)
+
+    another_user_against.vote_against(item)
+
+    voters_who_voted_against = item.voters_who_voted_against
+    assert_equal 2, voters_who_voted_against.size
+    assert voters_who_voted_against.include?(user_against)
+    assert voters_who_voted_against.include?(another_user_against)
+
+    non_voting_user = UserCustom.create(:name => 'voteable_configuration')
+
+    assert_equal true, item.voted_by?(user_for)
+    assert_equal true, item.voted_by?(another_user_for)
+    assert_equal true, item.voted_by?(user_against)
+    assert_equal false, item.voted_by?(non_voting_user)
+  end
+
+  # Duplicated method name, why?
   def test_tally_empty
     item = Item.create(:name => 'XBOX', :description => 'XBOX console')
     # COUNT(#{Vote.table_name}.id) is equivalent to aliased column `vote_count` - Postgres

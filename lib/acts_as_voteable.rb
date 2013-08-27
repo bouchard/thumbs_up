@@ -65,24 +65,24 @@ module ThumbsUp
     module InstanceMethods
 
       # wraps the dynamic, configured, relationship name
-      def _votes_by
+      def _votes_on
         self.send(ThumbsUp.configuration[:voteable_relationship_name])
       end
 
       def votes_for
-        self._votes_by.where(:vote => true).count
+        self._votes_on.where(:vote => true).count
       end
 
       def votes_against
-        self._votes_by.where(:vote => false).count
+        self._votes_on.where(:vote => false).count
       end
 
       def percent_for
-        (votes_for.to_f * 100 / (self._votes_by.size + 0.0001)).round
+        (votes_for.to_f * 100 / (self._votes_on.size + 0.0001)).round
       end
 
       def percent_against
-        (votes_against.to_f * 100 / (self._votes_by.size + 0.0001)).round
+        (votes_against.to_f * 100 / (self._votes_on.size + 0.0001)).round
       end
 
       # You'll probably want to use this method to display how 'good' a particular voteable
@@ -97,7 +97,7 @@ module ThumbsUp
       # http://evanmiller.org/how-not-to-sort-by-average-rating.html
       def ci_plusminus(confidence = 0.95)
         require 'statistics2'
-        n = votes.size
+        n = self._votes_on.size
         if n == 0
           return 0
         end
@@ -107,19 +107,19 @@ module ThumbsUp
       end
 
       def votes_count
-        votes.size
+        _votes_on.size
       end
 
       def voters_who_voted
-        votes.map(&:voter).uniq
+        _votes_on.map(&:voter).uniq
       end
 
       def voters_who_voted_for
-          votes.where(:vote => true).map(&:voter).uniq
+          _votes_on.where(:vote => true).map(&:voter).uniq
       end
 
       def voters_who_voted_against
-          votes.where(:vote => false).map(&:voter).uniq
+          _votes_on.where(:vote => false).map(&:voter).uniq
       end
 
       def voted_by?(voter)

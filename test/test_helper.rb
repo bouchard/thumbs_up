@@ -89,6 +89,24 @@ ActiveRecord::Schema.define do
     t.string  :name
     t.string  :description
   end
+
+  create_table :user_customs, :force => true do |t|
+    t.string :name
+    t.timestamps
+  end
+
+  create_table :item_customs, :force => true do |t|
+    t.integer :user_id
+    t.string  :name
+    t.string  :description
+  end
+
+  create_table :other_item_customs, :force => true do |t|
+    t.integer :user_id
+    t.string  :name
+    t.string  :description
+  end
+
 end
 
 require 'thumbs_up'
@@ -110,16 +128,47 @@ class Vote < ActiveRecord::Base
 end
 
 class Item < ActiveRecord::Base
+  # This is default, however because the setting is app-wide, and changed elsewhere, we need to be explicit
+  ThumbsUp.configuration.voteable_relationship_name = :votes
+  ThumbsUp.configuration.voter_relationship_name = :votes
   acts_as_voteable
   belongs_to :user
 end
 
 class OtherItem < ActiveRecord::Base
+  # This is default, however because the setting is app-wide, and changed elsewhere, we need to be explicit
+  ThumbsUp.configuration.voteable_relationship_name = :votes
+  ThumbsUp.configuration.voter_relationship_name = :votes
   acts_as_voteable
   belongs_to :user
 end
 
 class User < ActiveRecord::Base
+  # This is default, however because the setting is app-wide, and changed elsewhere, we need to be explicit
+  ThumbsUp.configuration.voteable_relationship_name = :votes
+  ThumbsUp.configuration.voter_relationship_name = :votes
+  acts_as_voter
+  has_many :items
+  has_karma(:items)
+end
+
+class ItemCustom < ActiveRecord::Base
+  ThumbsUp.configuration.voteable_relationship_name = :votes_on
+  ThumbsUp.configuration.voter_relationship_name = :votes_by
+  acts_as_voteable
+  belongs_to :user
+end
+
+class OtherItemCustom < ActiveRecord::Base
+  ThumbsUp.configuration.voteable_relationship_name = :votes_on
+  ThumbsUp.configuration.voter_relationship_name = :votes_by
+  acts_as_voteable
+  belongs_to :user
+end
+
+class UserCustom < ActiveRecord::Base
+  ThumbsUp.configuration.voteable_relationship_name = :votes_on
+  ThumbsUp.configuration.voter_relationship_name = :votes_by
   acts_as_voter
   has_many :items
   has_karma(:items)

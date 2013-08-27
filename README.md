@@ -11,8 +11,8 @@ Allows an arbitrary number of entities (users, etc.) to vote on models.
 ### Mixins
 This plugin introduces three mixins to your recipe book:
 
-1. **acts\_as\_voteable** : Intended for content objects like Posts, Comments, etc.
-2. **acts\_as\_voter** : Intended for voting entities, like Users.
+1. **acts\_as\_voteable** : Intended for content objects like Posts, Comments, etc. * (See *Configuration* below for caveats)
+2. **acts\_as\_voter** : Intended for voting entities, like Users. * (See *Configuration* below for caveats)
 3. **has\_karma** : Adds some helpers to acts\_as\_voter models for calculating karma.
 
 ### Inspiration
@@ -30,6 +30,22 @@ Installation
 
     rails generate thumbs_up
     rake db:migrate
+
+Configuration
+=============
+
+The relationship setup by the acts_as_voteable and acts_as_voter mixins both default to `votes`.  This causes one to obscure the other if you have a single class that votes on other instances of the same class.  If you have this scenario:
+
+    class User < ActiveRecord::Base
+      acts_as_voter     # relationship :votes will be obscured by the same named relationship from acts_as_voteable :(
+      acts_as_voteable
+    end
+
+Configure alternate relationship names in an initializer at `config/initializers/thumbs_up.rb`:
+
+    ThumbsUp.configuration.voteable_relationship_name = :votes_on   # defaults to :votes
+    ThumbsUp.configuration.voter_relationship_name =    :votes_by   # defaults to :votes
+
 
 Usage
 =====

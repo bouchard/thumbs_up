@@ -31,8 +31,8 @@ module ThumbsUp #:nodoc:
     module InstanceMethods
 
       # wraps the dynamic, configured, relationship name
-      def _votes_on
-        self.send(ThumbsUp.configuration[:voteable_relationship_name])
+      def _votes_by
+        self.send(ThumbsUp.configuration[:voter_relationship_name])
       end
 
       # Usage user.vote_count(:up)  # All +1 votes

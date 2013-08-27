@@ -17,8 +17,8 @@ module ThumbsUp
     #
     # @example
     #   ThumbsUp.configure do |config|
-    #     config.voteable_relationship_name = :votes_by
-    #     config.voter_relationship_name    = :votes_on
+    #     config.voteable_relationship_name = :votes_on
+    #     config.voter_relationship_name    = :votes_by
     #   end
     def configure
       yield(configuration)

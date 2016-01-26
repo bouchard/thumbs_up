@@ -90,7 +90,9 @@ end
 ```ruby
 voter.vote_for(voteable)     	# Adds a +1 vote
 voter.vote_against(voteable) 	# Adds a -1 vote
-voter.vote(voteable, vote) 	# Adds either a +1 or -1 vote: vote => true (+1), vote => false (-1)
+
+# vote_options is a hash of options that must include a direction of value :up or :down
+voter.vote(voteable, vote_options) 	  # Adds either a +1 or -1 depending on the direction value
 
 voter.vote_exclusively_for(voteable)	# Removes any previous votes by that particular voter, and votes for.
 voter.vote_exclusively_against(voteable)	# Removes any previous votes by that particular voter, and votes against.

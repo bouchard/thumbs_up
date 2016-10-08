@@ -57,7 +57,7 @@ module ThumbsUp
       end
 
       def column_names_for_tally
-        column_names.map { |column| "#{self.table_name}.#{column}" }.join(', ')
+        column_types.select { |k,v| v.type != :text }.map { |column,_| "#{self.table_name}.#{column}" }.join(', ')
       end
 
     end

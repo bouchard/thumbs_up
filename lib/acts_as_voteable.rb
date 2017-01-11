@@ -20,15 +20,29 @@ module ThumbsUp
 
     module SingletonMethods
 
+      # Useful for when you want to efficiently get plusminus totals in a single DB query without any ordering
+      def with_plusminus
+        plusminus_tally(:disable_ordering => true)
+      end
+      
+      # Useful for when you want to efficiently get vote totals in a single DB query without any ordering
+      def with_votes
+        tally(:disable_ordering => true)
+      end
+
       # Calculate the plusminus for a group of voteables in one database query.
       # This returns an Arel relation, so you can add conditions as you like chained on to
       # this method call.
       # i.e. Posts.tally.where('votes.created_at > ?', 2.days.ago)
       # You can also have the upvotes and downvotes returned separately in the same query:
       # Post.plusminus_tally(:separate_updown => true)
+      # You can also tally without any ordering:
+      # Post.plusminus_tally(:disable_ordering => true)
       def plusminus_tally(params = {})
         t = self.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.id = #{Vote.table_name}.voteable_id AND #{Vote.table_name}.voteable_type = '#{self.name}'")
-        t = t.order("plusminus_tally DESC")
+        unless params[:disable_ordering]
+          t = t.order("plusminus_tally DESC")
+        end 
         t = t.group(column_names_for_tally)
         t = t.select("#{self.table_name}.*")
         t = t.select("SUM(CASE #{Vote.table_name}.vote WHEN #{quoted_true} THEN 1 WHEN #{quoted_false} THEN -1 ELSE 0 END) AS plusminus_tally")
@@ -48,9 +62,11 @@ module ThumbsUp
       # This returns an Arel relation, so you can add conditions as you like chained on to
       # this method call.
       # i.e. Posts.tally.where('votes.created_at > ?', 2.days.ago)
-      def tally(*args)
+      def tally(params = {})
         t = self.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.id = #{Vote.table_name}.voteable_id")
-        t = t.order("vote_count DESC")
+        unless params[:disable_ordering]
+          t = t.order("vote_count DESC")
+        end
         t = t.group(column_names_for_tally)
         t = t.select("#{self.table_name}.*")
         t = t.select("COUNT(#{Vote.table_name}.id) AS vote_count")
